@@ -112,10 +112,8 @@ class Encoder(nn.Module):
                 
         for conv in self.convolutions:
             x = F.relu(conv(x, mask))
-            
-        codes = x.permute(0, 2, 1) * mask.unsqueeze(-1)
 
-        return codes
+        return x.permute(0, 2, 1) * mask.unsqueeze(-1)
       
       
         
@@ -137,10 +135,8 @@ class Decoder(nn.Module):
     def forward(self, x):
         
         outputs = self.lstm(x)[0]
-        
-        decoder_output = self.linear_projection(outputs)
 
-        return decoder_output   
+        return self.linear_projection(outputs)   
     
 
     
@@ -157,24 +153,19 @@ class Generator(nn.Module):
         
         x = x.transpose(2,1)
         codes = self.encoder(x)
-        
+
         encoder_outputs = torch.cat((codes, 
                                      c_trg.unsqueeze(1).expand(-1,x.size(-1),-1)), dim=-1)
-        mel_outputs = self.decoder(encoder_outputs)
-        
-        return mel_outputs
+        return self.decoder(encoder_outputs)
     
     def encode(self, x, mask):
         x = x.transpose(2,1)
-        codes = self.encoder(x, mask)
-        return codes
+        return self.encoder(x, mask)
     
     def decode(self, codes, c_trg):
         encoder_outputs = torch.cat((codes, 
                                      c_trg.unsqueeze(1).expand(-1,codes.size(1),-1)), dim=-1)
-        mel_outputs = self.decoder(encoder_outputs)
-        
-        return mel_outputs
+        return self.decoder(encoder_outputs)
     
     
     
@@ -234,9 +225,7 @@ class Encoder_2(nn.Module):
                 
         for i in range(len(self.convolutions)-1):
             x = F.relu(self.convolutions[i](x, mask))
-            
-        x = self.convolutions[-1](x, mask)    
-            
-        codes = x.permute(0, 2, 1) * mask.unsqueeze(-1)
 
-        return codes    
+        x = self.convolutions[-1](x, mask)    
+
+        return x.permute(0, 2, 1) * mask.unsqueeze(-1)    

@@ -230,13 +230,22 @@ class TransformerDecoder(DecoderBase):
         self.state = {}
 
         self.transformer_layers = nn.ModuleList(
-            [TransformerDecoderLayer(d_model, heads, d_ff, dropout,
-             attention_dropout, self_attn_type=self_attn_type,
-             max_relative_positions=max_relative_positions,
-             aan_useffn=aan_useffn,
-             full_context_alignment=full_context_alignment,
-             alignment_heads=alignment_heads)
-             for i in range(num_layers)])
+            [
+                TransformerDecoderLayer(
+                    d_model,
+                    heads,
+                    d_ff,
+                    dropout,
+                    attention_dropout,
+                    self_attn_type=self_attn_type,
+                    max_relative_positions=max_relative_positions,
+                    aan_useffn=aan_useffn,
+                    full_context_alignment=full_context_alignment,
+                    alignment_heads=alignment_heads,
+                )
+                for _ in range(num_layers)
+            ]
+        )
 
         # previously, there was a GlobalAttention module here for copy
         # attention. But it was never actually used -- the "copy" attention
@@ -310,8 +319,7 @@ class TransformerDecoder(DecoderBase):
         attn_aligns = []
 
         for i, layer in enumerate(self.transformer_layers):
-            layer_cache = self.state["cache"]["layer_{}".format(i)] \
-                if step is not None else None
+            layer_cache = self.state["cache"][f"layer_{i}"] if step is not None else None
             output, attn, attn_align = layer(
                 output,
                 src_memory_bank,
@@ -350,7 +358,7 @@ class TransformerDecoder(DecoderBase):
             else:
                 layer_cache["self_keys"] = None
                 layer_cache["self_values"] = None
-            self.state["cache"]["layer_{}".format(i)] = layer_cache
+            self.state["cache"][f"layer_{i}"] = layer_cache
 
     def update_dropout(self, dropout, attention_dropout):
         self.embeddings.update_dropout(dropout)

@@ -11,10 +11,7 @@ def split_corpus(path, shard_size, default=None):
     """yield a `list` containing `shard_size` line of `path`,
     or repeatly generate `default` if `path` is None.
     """
-    if path is not None:
-        return _split_corpus(path, shard_size)
-    else:
-        return repeat(default)
+    return _split_corpus(path, shard_size) if path is not None else repeat(default)
 
 
 def _split_corpus(path, shard_size):
@@ -25,20 +22,21 @@ def _split_corpus(path, shard_size):
             yield f.readlines()
         else:
             while True:
-                shard = list(islice(f, shard_size))
-                if not shard:
+                if shard := list(islice(f, shard_size)):
+                    yield shard
+                else:
                     break
-                yield shard
 
 
 def aeq(*args):
     """
     Assert all arguments have the same value
     """
-    arguments = (arg for arg in args)
+    arguments = iter(args)
     first = next(arguments)
-    assert all(arg == first for arg in arguments), \
-        "Not all arguments have the same value: " + str(args)
+    assert all(
+        arg == first for arg in arguments
+    ), f"Not all arguments have the same value: {args}"
 
 
 def sequence_mask(lengths, max_len=None):
@@ -112,9 +110,7 @@ def generate_relative_positions_matrix(length, max_relative_positions,
     distance_mat_clipped = torch.clamp(distance_mat,
                                        min=-max_relative_positions,
                                        max=max_relative_positions)
-    # Shift values to be >= 0
-    final_mat = distance_mat_clipped + max_relative_positions
-    return final_mat
+    return distance_mat_clipped + max_relative_positions
 
 
 def relative_matmul(x, z, transpose):
@@ -130,8 +126,7 @@ def relative_matmul(x, z, transpose):
     else:
         x_tz_matmul = torch.matmul(x_t_r, z)
     x_tz_matmul_r = x_tz_matmul.reshape(length, batch_size, heads, -1)
-    x_tz_matmul_r_t = x_tz_matmul_r.permute(1, 2, 0, 3)
-    return x_tz_matmul_r_t
+    return x_tz_matmul_r.permute(1, 2, 0, 3)
 
 
 def fn_args(fun):
@@ -160,14 +155,16 @@ def check_model_config(model_config, root):
         model_path = os.path.join(root, model)
         if not os.path.exists(model_path):
             raise FileNotFoundError(
-                "{} from model {} does not exist".format(
-                    model_path, model_config["id"]))
-    if "tokenizer" in model_config.keys():
-        if "params" in model_config["tokenizer"].keys():
-            for k, v in model_config["tokenizer"]["params"].items():
-                if k.endswith("path"):
-                    tok_path = os.path.join(root, v)
-                    if not os.path.exists(tok_path):
-                        raise FileNotFoundError(
-                            "{} from model {} does not exist".format(
-                                tok_path, model_config["id"]))
+                f'{model_path} from model {model_config["id"]} does not exist'
+            )
+    if (
+        "tokenizer" in model_config.keys()
+        and "params" in model_config["tokenizer"].keys()
+    ):
+        for k, v in model_config["tokenizer"]["params"].items():
+            if k.endswith("path"):
+                tok_path = os.path.join(root, v)
+                if not os.path.exists(tok_path):
+                    raise FileNotFoundError(
+                        f'{tok_path} from model {model_config["id"]} does not exist'
+                    )

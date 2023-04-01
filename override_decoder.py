@@ -9,12 +9,12 @@ class OnmtDecoder_1(TransformerDecoder):
         """Decode, possibly stepwise."""
         if step == 0:
             self._init_cache(memory_bank)
-        
+
         if step is None:
             tgt_lens = kwargs["tgt_lengths"]
         else:    
             tgt_words = kwargs["tgt_words"]
-        
+
         emb = self.embeddings(tgt, step=step)
         assert emb.dim() == 3  # len x batch x embedding_dim
 
@@ -35,8 +35,7 @@ class OnmtDecoder_1(TransformerDecoder):
         attn_aligns = []
 
         for i, layer in enumerate(self.transformer_layers):
-            layer_cache = self.state["cache"]["layer_{}".format(i)] \
-                if step is not None else None
+            layer_cache = self.state["cache"][f"layer_{i}"] if step is not None else None
             output, attn, attn_align = layer(
                 output,
                 src_memory_bank,

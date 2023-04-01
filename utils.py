@@ -64,8 +64,7 @@ class ConvNorm(torch.nn.Module):
             self.conv.weight, gain=torch.nn.init.calculate_gain(w_init_gain))
 
     def forward(self, signal):
-        conv_signal = self.conv(signal)
-        return conv_signal
+        return self.conv(signal)
     
     
 

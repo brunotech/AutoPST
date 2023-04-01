@@ -44,9 +44,6 @@ class PositionalEncoding(nn.Module):
         """
 
         emb = emb * math.sqrt(self.dim)
-        if step is None:
-            emb = emb + self.pe[:emb.size(0)]
-        else:
-            emb = emb + self.pe[step]
+        emb = emb + self.pe[:emb.size(0)] if step is None else emb + self.pe[step]
         emb = self.dropout(emb)
         return emb
