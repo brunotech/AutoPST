@@ -16,18 +16,18 @@ class Utterances(data.Dataset):
     def __init__(self, hparams):
         """Initialize and preprocess the Utterances dataset."""
         self.meta_file = hparams.meta_file
-        
+
         self.feat_dir_1 = hparams.feat_dir_1
         self.feat_dir_2 = hparams.feat_dir_2
         self.feat_dir_3 = hparams.feat_dir_3
-        
+
         self.step = 4
         self.split = 0
-         
+
         self.max_len_pad = hparams.max_len_pad
-        
+
         meta = pickle.load(open(self.meta_file, "rb"))
-        
+
         manager = Manager()
         meta = manager.list(meta)
         dataset = manager.list(len(meta)*[None])  # <-- can be shared between processes.
@@ -39,12 +39,12 @@ class Utterances(data.Dataset):
             processes.append(p)
         for p in processes:
             p.join()
-            
+
         # very importtant to do dataset = list(dataset)            
         self.train_dataset = list(dataset)
         self.num_tokens = len(self.train_dataset)
-        
-        print('Finished loading the {} Utterances training dataset...'.format(self.num_tokens))
+
+        print(f'Finished loading the {self.num_tokens} Utterances training dataset...')
         
         
     def load_data(self, submeta, dataset, idx_offset):  
@@ -212,17 +212,18 @@ def get_loader(hparams):
     """Build and return a data loader."""
     
     dataset = Utterances(hparams)
-    
+
     my_collator = MyCollator(hparams)
-    
+
     sampler = MultiSampler(len(dataset), hparams.samplier, shuffle=hparams.shuffle)
-    
-    data_loader = data.DataLoader(dataset=dataset,
-                                  batch_size=hparams.batch_size,
-                                  sampler=sampler,
-                                  num_workers=hparams.num_workers,
-                                  drop_last=True,
-                                  pin_memory=False,
-                                  worker_init_fn=worker_init_fn,
-                                  collate_fn=my_collator)
-    return data_loader
+
+    return data.DataLoader(
+        dataset=dataset,
+        batch_size=hparams.batch_size,
+        sampler=sampler,
+        num_workers=hparams.num_workers,
+        drop_last=True,
+        pin_memory=False,
+        worker_init_fn=worker_init_fn,
+        collate_fn=my_collator,
+    )
